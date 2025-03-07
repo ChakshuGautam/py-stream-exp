@@ -166,6 +166,28 @@ class TestLLMStreamingClientAsyncCallback(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(callback_results, prompt.split(),
                          "Callback should be invoked for each token.")
 
+        
+class TestLLMStreamingClientWithAsyncCallback(unittest.IsolatedAsyncioTestCase):
+    async def test_astream_with_async_callback(self):
+        client = LLMStreamingClient()
+        prompt = "Async callback test"
+        callback_results = []
+
+        async def async_callback(token):
+            # Simulate some async processing
+            await asyncio.sleep(0.01)
+            callback_results.append(token)
+
+        tokens = []
+        async for token in client.astream(prompt, callback=async_callback):
+            tokens.append(token)
+        # Verify tokens are yielded as expected
+        self.assertEqual(tokens, prompt.split(),
+                         "astream should yield tokens split by spaces.")
+        # Verify that the async callback was invoked for each token
+        self.assertEqual(callback_results, prompt.split(),
+                         "Async callback should be invoked for each token.")
+
 
 if __name__ == "__main__":
     unittest.main()

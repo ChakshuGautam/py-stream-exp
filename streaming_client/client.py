@@ -127,8 +127,11 @@ class LLMStreamingClient:
         If a callback is provided, it is invoked on each token.
         """
         async for token in async_stream(prompt):
-            if callback:
-                callback(token)
+            if callback:  # Only call if callback exists
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(token)
+                elif callable(callback):  # Check if it's a callable
+                    callback(token)
             yield token
 
     async def acomplete(self, prompt: str, callback=None) -> str:
@@ -138,7 +141,10 @@ class LLMStreamingClient:
         """
         tokens = []
         async for token in async_stream(prompt):
-            if callback:
-                callback(token)
+            if callback:  # Only call if callback exists
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(token)
+                elif callable(callback):  # Check if it's a callable
+                    callback(token)
             tokens.append(token)
         return " ".join(tokens)
