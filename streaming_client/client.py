@@ -17,7 +17,7 @@ async def async_stream(prompt: str):
     tokens = prompt.split() if prompt else ["No", "prompt", "provided"]
     for token in tokens:
         # Simulate asynchronous processing delay
-        await asyncio.sleep(random.uniform(0.5, 1))
+        await asyncio.sleep(random.uniform(0.05, 0.10))
         yield token
 
 
@@ -99,27 +99,46 @@ class LLMStreamingClient:
     A unified client that provides both synchronous and asynchronous streaming responses,
     as well as complete (aggregated) responses for an LLM.
     """
-    def stream_sync(self, prompt: str):
+    def stream_sync(self, prompt: str, callback=None):
         """
         Synchronously yields tokens from the LLM.
+        If a callback is provided, it is invoked on each token.
         """
-        return sync_stream(prompt)
-
-    def complete_sync(self, prompt: str) -> str:
-        """
-        Synchronously collects all tokens into a complete response.
-        """
-        return collect_sync_response(prompt)
-
-    async def astream(self, prompt: str):
-        """
-        Asynchronously yields tokens from the LLM.
-        """
-        async for token in async_stream(prompt):
+        for token in sync_stream(prompt):
+            if callback:
+                callback(token)
             yield token
 
-    async def acomplete(self, prompt: str) -> str:
+    def complete_sync(self, prompt: str, callback=None) -> str:
+        """
+        Synchronously collects all tokens into a complete response.
+        If a callback is provided, it is invoked on each token.
+        """
+        tokens = []
+        for token in sync_stream(prompt):
+            if callback:
+                callback(token)
+            tokens.append(token)
+        return " ".join(tokens)
+
+    async def astream(self, prompt: str, callback=None):
+        """
+        Asynchronously yields tokens from the LLM.
+        If a callback is provided, it is invoked on each token.
+        """
+        async for token in async_stream(prompt):
+            if callback:
+                callback(token)
+            yield token
+
+    async def acomplete(self, prompt: str, callback=None) -> str:
         """
         Asynchronously collects all tokens into a complete response.
+        If a callback is provided, it is invoked on each token.
         """
-        return await collect_async_response(prompt)
+        tokens = []
+        async for token in async_stream(prompt):
+            if callback:
+                callback(token)
+            tokens.append(token)
+        return " ".join(tokens)

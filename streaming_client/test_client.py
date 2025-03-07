@@ -128,5 +128,44 @@ class TestLLMStreamingClientAsync(unittest.IsolatedAsyncioTestCase):
         response = await client.acomplete(prompt)
         self.assertEqual(response, prompt, "acomplete should reassemble tokens into the original prompt.")
 
+class TestLLMStreamingClientCallback(unittest.TestCase):
+    def test_stream_sync_with_callback(self):
+        client = LLMStreamingClient()
+        prompt = "Hello callback"
+        callback_results = []
+
+        def callback(token):
+            callback_results.append(token)
+
+        # Call stream_sync with an optional callback parameter
+        tokens = list(client.stream_sync(prompt, callback=callback))
+        # Verify tokens are yielded as expected
+        self.assertEqual(tokens, prompt.split(),
+                         "stream_sync should yield tokens split by spaces.")
+        # Verify that the callback was invoked for each token
+        self.assertEqual(callback_results, prompt.split(),
+                         "Callback should be invoked for each token.")
+
+class TestLLMStreamingClientAsyncCallback(unittest.IsolatedAsyncioTestCase):
+    async def test_astream_with_callback(self):
+        client = LLMStreamingClient()
+        prompt = "Async callback test"
+        callback_results = []
+
+        def callback(token):
+            callback_results.append(token)
+
+        tokens = []
+        # Call astream with an optional callback parameter
+        async for token in client.astream(prompt, callback=callback):
+            tokens.append(token)
+        # Verify tokens are yielded as expected
+        self.assertEqual(tokens, prompt.split(),
+                         "astream should yield tokens split by spaces.")
+        # Verify that the callback was invoked for each token
+        self.assertEqual(callback_results, prompt.split(),
+                         "Callback should be invoked for each token.")
+
+
 if __name__ == "__main__":
     unittest.main()
